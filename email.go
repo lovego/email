@@ -15,7 +15,6 @@ import (
 	"math/big"
 	"mime"
 	"mime/multipart"
-	"mime/quotedprintable"
 	"net/mail"
 	"net/smtp"
 	"net/textproto"
@@ -290,19 +289,19 @@ func writeMessage(buff *bytes.Buffer, msg []byte, multipart bool, mediaType stri
 	if multipart {
 		header := textproto.MIMEHeader{
 			"Content-Type":              {mediaType + "; charset=UTF-8"},
-			"Content-Transfer-Encoding": {"quoted-printable"},
 		}
 		if _, err := w.CreatePart(header); err != nil {
 			return err
 		}
 	}
-
-	qp := quotedprintable.NewWriter(buff)
+	encodeLen := base64.StdEncoding.EncodedLen(len(msg))
+	encoded := make([]byte, encodeLen)
+	base64.StdEncoding.Encode(encoded, msg)
 	// Write the text
-	if _, err := qp.Write(msg); err != nil {
+	if _, err := buff.Write(encoded); err != nil {
 		return err
 	}
-	return qp.Close()
+	return nil
 }
 
 // Bytes converts the Email object to a []byte representation, including all needed MIMEHeaders, boundaries, etc.
@@ -331,10 +330,10 @@ func (e *Email) Bytes() ([]byte, error) {
 		headers.Set("Content-Type", "multipart/alternative;\r\n boundary="+w.Boundary())
 	case len(e.HTML) > 0:
 		headers.Set("Content-Type", "text/html; charset=UTF-8")
-		headers.Set("Content-Transfer-Encoding", "quoted-printable")
+		headers.Set("Content-Transfer-Encoding", "base64")
 	default:
 		headers.Set("Content-Type", "text/plain; charset=UTF-8")
-		headers.Set("Content-Transfer-Encoding", "quoted-printable")
+		headers.Set("Content-Transfer-Encoding", "base64")
 	}
 	headerToBytes(buff, headers)
 	io.WriteString(buff, "\r\n")
@@ -553,7 +552,7 @@ func headerToBytes(buff *bytes.Buffer, header textproto.MIMEHeader) {
 			case field == "Content-Type" || field == "Content-Disposition":
 				buff.Write([]byte(subval))
 			default:
-				buff.Write([]byte(mime.QEncoding.Encode("UTF-8", subval)))
+				buff.Write([]byte(mime.BEncoding.Encode("utf-8", subval)))
 			}
 			io.WriteString(buff, "\r\n")
 		}
@@ -585,4 +584,8 @@ func generateMessageID() (string, error) {
 	}
 	msgid := fmt.Sprintf("<%d.%d.%d@%s>", t, pid, rint, h)
 	return msgid, nil
+}
+
+func BEncode(content string) string{
+    return mime.BEncoding.Encode("utf-8", content)
 }
