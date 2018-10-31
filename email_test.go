@@ -13,6 +13,7 @@ import (
 	"net/mail"
 	"net/smtp"
 	"net/textproto"
+    "encoding/base64"
 )
 
 func prepareEmail() *Email {
@@ -103,7 +104,7 @@ func TestEmailTextAttachment(t *testing.T) {
 	}
 	b := params["boundary"]
 	if b == "" {
-		t.Fatalf("Invalid or missing boundary parameter: ", b)
+		t.Fatal("Invalid or missing boundary parameter: ", b)
 	}
 	if len(params) != 1 {
 		t.Fatal("Unexpected content-type parameters")
@@ -114,7 +115,7 @@ func TestEmailTextAttachment(t *testing.T) {
 
 	text, err := mixed.NextPart()
 	if err != nil {
-		t.Fatalf("Could not find text component of email: ", err)
+		t.Fatal("Could not find text component of email: ", err)
 	}
 
 	// Does the text portion match what we expect?
@@ -125,17 +126,19 @@ func TestEmailTextAttachment(t *testing.T) {
 		t.Fatal("Message missing text/plain")
 	}
 	plainText, err := ioutil.ReadAll(text)
+    decoded := make([]byte, base64.StdEncoding.DecodedLen(len(plainText)))
+    _, err = base64.StdEncoding.Decode(decoded, []byte(plainText))
 	if err != nil {
 		t.Fatal("Could not read plain text component of message: ", err)
 	}
-	if !bytes.Equal(plainText, []byte("Text Body is, of course, supported!\r\n")) {
-		t.Fatalf("Plain text is broken: %#q", plainText)
+	if !bytes.Equal(decoded, []byte("Text Body is, of course, supported!\n")) {
+		t.Fatalf("Plain text is broken: %#q", decoded)
 	}
 
 	// Check attachments.
 	_, err = mixed.NextPart()
 	if err != nil {
-		t.Fatalf("Could not find attachment component of email: ", err)
+		t.Fatal("Could not find attachment component of email: ", err)
 	}
 
 	if _, err = mixed.NextPart(); err != io.EOF {
@@ -164,7 +167,7 @@ func TestEmailTextHtmlAttachment(t *testing.T) {
 	}
 	b := params["boundary"]
 	if b == "" {
-		t.Fatalf("Invalid or missing boundary parameter: ", b)
+		t.Fatal("Invalid or missing boundary parameter: ", b)
 	}
 	if len(params) != 1 {
 		t.Fatal("Unexpected content-type parameters")
@@ -175,7 +178,7 @@ func TestEmailTextHtmlAttachment(t *testing.T) {
 
 	text, err := mixed.NextPart()
 	if err != nil {
-		t.Fatalf("Could not find text component of email: ", err)
+		t.Fatal("Could not find text component of email: ", err)
 	}
 
 	// Does the text portion match what we expect?
@@ -191,17 +194,19 @@ func TestEmailTextHtmlAttachment(t *testing.T) {
 		t.Fatal("Could not read plain text component of message: ", err)
 	}
 	plainText, err := ioutil.ReadAll(part)
+	decoded := make([]byte, base64.StdEncoding.DecodedLen(len(plainText)))
+	_, err = base64.StdEncoding.Decode(decoded, []byte(plainText))
 	if err != nil {
 		t.Fatal("Could not read plain text component of message: ", err)
 	}
-	if !bytes.Equal(plainText, []byte("Text Body is, of course, supported!\r\n")) {
-		t.Fatalf("Plain text is broken: %#q", plainText)
+	if !bytes.Equal(decoded, []byte("Text Body is, of course, supported!\n")) {
+		t.Fatalf("Plain text is broken: %#q", decoded)
 	}
 
 	// Check attachments.
 	_, err = mixed.NextPart()
 	if err != nil {
-		t.Fatalf("Could not find attachment component of email: ", err)
+		t.Fatal("Could not find attachment component of email: ", err)
 	}
 
 	if _, err = mixed.NextPart(); err != io.EOF {
@@ -227,7 +232,7 @@ func TestEmailAttachment(t *testing.T) {
 	}
 	b := params["boundary"]
 	if b == "" {
-		t.Fatalf("Invalid or missing boundary parameter: ", b)
+		t.Fatal("Invalid or missing boundary parameter: ", b)
 	}
 	if len(params) != 1 {
 		t.Fatal("Unexpected content-type parameters")
@@ -239,7 +244,7 @@ func TestEmailAttachment(t *testing.T) {
 	// Check attachments.
 	_, err = mixed.NextPart()
 	if err != nil {
-		t.Fatalf("Could not find attachment component of email: ", err)
+		t.Fatal("Could not find attachment component of email: ", err)
 	}
 
 	if _, err = mixed.NextPart(); err != io.EOF {
