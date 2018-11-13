@@ -552,7 +552,7 @@ func headerToBytes(buff *bytes.Buffer, header textproto.MIMEHeader) {
 			case field == "Content-Type" || field == "Content-Disposition":
 				buff.Write([]byte(subval))
 			default:
-				buff.Write([]byte(mime.BEncoding.Encode("utf-8", subval)))
+				buff.Write([]byte(BEncode(subval)))
 			}
 			io.WriteString(buff, "\r\n")
 		}
@@ -587,5 +587,5 @@ func generateMessageID() (string, error) {
 }
 
 func BEncode(content string) string{
-    return mime.BEncoding.Encode("utf-8", content)
+    return BEncoding.Encode("utf-8", content)
 }
